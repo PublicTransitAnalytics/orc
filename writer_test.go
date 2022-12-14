@@ -514,3 +514,45 @@ func TestBooleanWriterAlternating(t *testing.T) {
 	}
 
 }
+
+func TestSameNumberRowsAsStride(t *testing.T) {
+	f, err := ioutil.TempFile("", "testorc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filename := f.Name()
+	defer os.Remove(filename)
+	defer f.Close()
+
+	schema, _ := NewTypeDescription(
+		SetCategory(CategoryStruct),
+		AddField("batch", SetCategory(CategoryString)),
+		AddField("sector", SetCategory(CategoryInt)),
+		AddField("count", SetCategory(CategoryInt)),
+		AddField("reporter", SetCategory(CategoryString)),
+		AddField("fingerprint", SetCategory(CategoryLong)))
+
+	w, err := NewWriter(f, SetSchema(schema))
+	if err != nil {
+		t.Fatal(err)
+	}
+	numValues := 10_000
+	values := make([]interface{}, numValues)
+
+	for i := 0; i < numValues; i++ {
+
+		values[i] = int64(i)
+
+		err := w.Write("b", i, 5, "r", -6)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	err = w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}

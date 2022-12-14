@@ -51,6 +51,7 @@ type Writer struct {
 	indexOffset          uint64
 	chunkOffset          uint64
 	compressionCodec     CompressionCodec
+	lastRecordPositions  uint64
 }
 
 func ptrInt64(i int64) *int64 {
@@ -162,6 +163,7 @@ func (w *Writer) Write(values ...interface{}) error {
 	if w.totalRows%uint64(w.footer.GetRowIndexStride()) == 0 {
 		// Records and resets indexes for each writer.
 		w.recordPositions()
+		w.lastRecordPositions = w.totalRows
 
 		if w.treeWriters.size() >= w.stripeTargetSize {
 			return w.writeStripe()
@@ -217,7 +219,9 @@ func (w *Writer) flushWriters() error {
 	if err := w.treeWriter.Flush(); err != nil {
 		return err
 	}
-	w.recordPositions()
+	if w.lastRecordPositions != w.totalRows {
+		w.recordPositions()
+	}
 	return nil
 }
 
